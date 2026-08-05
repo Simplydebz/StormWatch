@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STORMWATCH — Live Fortnite Competitive Standings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0d13;
+    --bg-panel: #10141d;
+    --bg-panel-2: #151a24;
+    --line: #232a38;
+    --storm: #7c6cff;
+    --storm-bright: #a498ff;
+    --cyan: #2ce6d9;
+    --gold: #f5c542;
+    --elim: #ff4d6d;
+    --text: #e7eaf0;
+    --text-dim: #8891a3;
+    --text-faint: #4d5566;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(124,108,255,0.16), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(44,230,217,0.10), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Rajdhani', sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+
+  .bg-blob{
+    position:fixed; border-radius:50%; filter:blur(90px);
+    pointer-events:none; z-index:-1; mix-blend-mode:screen;
+  }
+  .bg-blob-1{
+    width:50vw; height:50vw; top:-15%; left:-15%;
+    background:var(--storm); opacity:0.28;
+    animation:drift1 30s ease-in-out infinite;
+  }
+  .bg-blob-2{
+    width:45vw; height:45vw; bottom:-18%; right:-12%;
+    background:var(--cyan); opacity:0.16;
+    animation:drift2 36s ease-in-out infinite;
+  }
+  .bg-blob-3{
+    width:38vw; height:38vw; top:45%; left:55%;
+    background:var(--gold); opacity:0.12;
+    animation:drift3 42s ease-in-out infinite;
+  }
+  @keyframes drift1{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(9vw,7vw) scale(1.15);}
+  }
+  @keyframes drift2{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(-7vw,-9vw) scale(1.1);}
+  }
+  @keyframes drift3{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(-11vw,6vw) scale(0.88);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bg-blob{animation:none;}
+  }
+
+  a{color:inherit;}
+  ::selection{background:var(--storm); color:#0a0d13;}
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px clamp(16px,4vw,48px);
+    background:rgba(10,13,19,0.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{
+    width:30px; height:30px; border-radius:50%;
+    border:2px solid var(--storm-bright);
+    position:relative; flex-shrink:0;
+  }
+  .brand-mark::after{
+    content:''; position:absolute; inset:6px;
+    border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 12px var(--cyan);
+  }
+  .brand-name{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:20px; letter-spacing:0.06em;}
+  .brand-name span{color:var(--storm-bright);}
+  nav.links{display:flex; gap:28px; font-size:14px; color:var(--text-dim);}
+  nav.links a{text-decoration:none; transition:color .15s;}
+  nav.links a:hover{color:var(--text);}
+  .live-pill{
+    display:flex; align-items:center; gap:7px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.08em;
+    color:var(--elim); border:1px solid rgba(255,77,109,0.4);
+    padding:6px 12px; border-radius:100px; background:rgba(255,77,109,0.06);
+  }
+  .live-dot{width:7px; height:7px; border-radius:50%; background:var(--elim); animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(255,77,109,0.5);} 50%{opacity:.55; box-shadow:0 0 0 5px rgba(255,77,109,0);}}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:clamp(40px,7vw,90px) clamp(16px,4vw,48px) 30px;
+    display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center;
+    overflow:hidden;
+  }
+  @media(max-width:880px){ .hero{grid-template-columns:1fr;} }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--cyan);
+    letter-spacing:0.15em; display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow::before{content:''; width:24px; height:1px; background:var(--cyan);}
+  h1.title{
+    font-size:clamp(40px,6vw,72px); line-height:0.95; font-weight:700;
+    letter-spacing:0.01em;
+  }
+  h1.title .accent{color:transparent; -webkit-text-stroke:1.5px var(--storm-bright);}
+  .hero p.sub{
+    margin-top:20px; max-width:480px; color:var(--text-dim); font-size:15.5px; line-height:1.6;
+  }
+  .hero-ctas{display:flex; gap:12px; margin-top:30px; flex-wrap:wrap;}
+  .btn{
+    font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:0.03em;
+    font-size:15px; padding:12px 22px; border-radius:6px; cursor:pointer; border:none;
+    text-transform:uppercase;
+  }
+  .btn-primary{background:var(--storm-bright); color:#0a0d13;}
+  .btn-primary:hover{background:#b8adff;}
+  .btn-ghost{background:transparent; color:var(--text); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--storm-bright); color:var(--storm-bright);}
+
+  /* ---------- STORM CIRCLE ---------- */
+  .circle-wrap{
+    position:relative; display:flex; align-items:center; justify-content:center;
+    aspect-ratio:1; width:min(100%,420px); justify-self:center;
+  }
+  .circle-wrap::before{
+    content:''; position:absolute; inset:15%; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,108,255,0.18), transparent 70%);
+    animation:pulse-glow 4s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes pulse-glow{0%,100%{opacity:0.5; transform:scale(0.95);} 50%{opacity:1; transform:scale(1.05);}}
+  .circle-wrap svg{width:100%; height:100%; overflow:visible;}
+  .circle-ring{fill:none; stroke:var(--line); stroke-width:1;}
+  .circle-storm{
+    fill:none; stroke:var(--storm-bright); stroke-width:2;
+    stroke-dasharray:4 6; animation:spin 60s linear infinite; opacity:0.55;
+    transform-origin:center;
+  }
+  .circle-storm-2{
+    fill:none; stroke:var(--cyan); stroke-width:1;
+    stroke-dasharray:1 5; animation:spin-rev 40s linear infinite; opacity:0.4;
+    transform-origin:center;
+  }
+  @keyframes spin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+  @keyframes spin-rev{from{transform:rotate(360deg);} to{transform:rotate(0deg);}}
+  .circle-center{
+    position:absolute; text-align:center;
+  }
+  .circle-center .num{
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:56px; color:var(--text);
+    line-height:1;
+  }
+  .circle-center .label{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim);
+    letter-spacing:0.12em; margin-top:6px; text-transform:uppercase;
+  }
+  .circle-badge{
+    position:absolute; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    letter-spacing:0.1em; color:var(--text-faint); text-transform:uppercase;
+  }
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:20px clamp(16px,4vw,48px);}
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    margin:36px 0 18px;
+  }
+  .section-title{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:26px; letter-spacing:0.02em; text-transform:uppercase;}
+  .section-meta{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-faint);}
+
+  /* ---------- TOURNAMENT SELECT ---------- */
+  .tourney-row{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px;}
+  .tourney-chip{
+    flex-shrink:0; padding:10px 16px; border-radius:8px; border:1px solid var(--line);
+    background:var(--bg-panel); font-size:13.5px; color:var(--text-dim); cursor:pointer;
+    display:flex; flex-direction:column; gap:2px; min-width:150px; transition:.15s;
+  }
+  .tourney-chip:hover{border-color:var(--text-faint);}
+  .tourney-chip.active{border-color:var(--storm-bright); background:rgba(124,108,255,0.08); color:var(--text);}
+  .tourney-chip .t-name{font-weight:600; color:var(--text); font-size:14px;}
+  .tourney-chip .t-stage{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-faint);}
+
+  /* ---------- LEADERBOARD ---------- */
+  .board{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  .board-header, .board-row{
+    display:grid;
+    grid-template-columns:52px 1fr 90px 90px 90px 100px 90px;
+    align-items:center;
+    padding:13px 18px;
+    gap:8px;
+  }
+  .board-header{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint);
+    letter-spacing:0.08em; text-transform:uppercase; border-bottom:1px solid var(--line);
+  }
+  .board-row{
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+    transition:background .15s;
+  }
+  .board-row:last-child{border-bottom:none;}
+  .board-row:hover{background:var(--bg-panel-2);}
+  .board-row.top3{background:linear-gradient(90deg, rgba(245,197,66,0.05), transparent 40%);}
+  .rank{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:19px; color:var(--text-dim);}
+  .rank.r1{color:var(--gold); text-shadow:0 0 12px rgba(245,197,66,0.6);}
+  .rank.r2{color:#e4e7ee; text-shadow:0 0 10px rgba(228,231,238,0.35);}
+  .rank.r3{color:#e0a566; text-shadow:0 0 10px rgba(224,165,102,0.4);}
+  .board-row.top3{position:relative;}
+  .board-row.top3::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  }
+  .board-row.top3:has(.rank.r1)::before{background:var(--gold); box-shadow:0 0 8px var(--gold);}
+  .board-row.top3:has(.rank.r2)::before{background:#e4e7ee; box-shadow:0 0 8px rgba(228,231,238,0.6);}
+  .board-row.top3:has(.rank.r3)::before{background:#e0a566; box-shadow:0 0 8px rgba(224,165,102,0.6);}
+  .points-bar-track{position:relative; height:3px; background:var(--line); border-radius:2px; margin-top:5px; overflow:hidden; width:100%;}
+  .points-bar-fill{position:absolute; left:0; top:0; bottom:0; border-radius:2px; background:linear-gradient(90deg, var(--storm-bright), var(--cyan));}
+  .team-cell{display:flex; align-items:center; gap:10px; min-width:0;}
+  .fav-star{
+    background:none; border:none; cursor:pointer; font-size:16px; line-height:1;
+    color:var(--text-faint); padding:2px 4px; flex-shrink:0; transition:color .15s, transform .1s;
+  }
+  .fav-star:hover{transform:scale(1.15);}
+  .fav-star.active{color:var(--gold);}
+  .board-row.favorited{box-shadow:inset 3px 0 0 var(--storm-bright);}
+  .fav-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .fav-item:last-child{border-bottom:none;}
+  .fav-item .fav-rank{font-family:'Rajdhani',sans-serif; font-weight:700; color:var(--storm-bright); font-size:15px; width:28px;}
+  .team-swatch{width:12px; height:12px; border-radius:50%; flex-shrink:0; box-shadow:0 0 8px currentColor; border:1.5px solid rgba(255,255,255,0.25);}
+  .team-info{min-width:0;}
+  .team-name{font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .team-players{font-size:11.5px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .stat{font-family:'IBM Plex Mono',monospace; color:var(--text-dim); font-size:13px;}
+  .stat.pts{color:var(--text); font-weight:600; font-size:15px; font-family:'Rajdhani',sans-serif;}
+  .trend{display:flex; align-items:center; gap:4px; font-family:'IBM Plex Mono',monospace; font-size:12px;}
+  .trend.up{color:var(--cyan);}
+  .trend.down{color:var(--elim);}
+  .trend.flat{color:var(--text-faint);}
+
+  @media(max-width:760px){
+    .board-header, .board-row{grid-template-columns:38px 1fr 60px 70px; }
+    .col-elims, .col-avg, .col-trend{display:none;}
+  }
+
+  /* ---------- KILL FEED / TICKER ---------- */
+  .feed-panel{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px; max-height:340px; overflow-y:auto;
+  }
+  .feed-item{
+    display:flex; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line);
+    font-size:13px; align-items:baseline;
+  }
+  .feed-item:last-child{border-bottom:none;}
+  .feed-time{font-family:'IBM Plex Mono',monospace; color:var(--text-faint); font-size:11px; flex-shrink:0; width:44px;}
+  .feed-text b{color:var(--storm-bright); font-weight:600;}
+  .feed-text .vs{color:var(--elim);}
+
+  /* ---------- GRID: board + side ---------- */
+  .layout-grid{display:grid; grid-template-columns:1fr 320px; gap:22px; align-items:start;}
+  @media(max-width:980px){ .layout-grid{grid-template-columns:1fr;} }
+
+  .side-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:22px;
+  }
+  .side-card h3{font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:0.03em; text-transform:uppercase; margin-bottom:14px; color:var(--text);}
+  .mini-stat{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .mini-stat:last-child{border-bottom:none;}
+  .mini-stat .v{font-family:'IBM Plex Mono',monospace; color:var(--cyan);}
+
+  /* ---------- MATCH SCHEDULE ---------- */
+  .match-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 0; border-bottom:1px solid var(--line); font-size:13.5px;
+  }
+  .match-row:last-child{border-bottom:none;}
+  .match-status{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 8px; border-radius:4px;
+    letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .match-status.live{background:rgba(255,77,109,0.12); color:var(--elim);}
+  .match-status.upcoming{background:rgba(124,108,255,0.1); color:var(--storm-bright);}
+  .match-status.done{background:rgba(255,255,255,0.04); color:var(--text-faint);}
+
+  footer{
+    padding:30px clamp(16px,4vw,48px) 50px; color:var(--text-faint); font-size:12px;
+    border-top:1px solid var(--line); margin-top:40px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  .note-banner{
+    margin:0 clamp(16px,4vw,48px); padding:12px 16px; border-radius:8px;
+    background:rgba(44,230,217,0.06); border:1px solid rgba(44,230,217,0.25);
+    color:var(--text-dim); font-size:12.5px; display:flex; gap:10px; align-items:flex-start;
+  }
+  .note-banner b{color:var(--cyan);}
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-blob bg-blob-3"></div>
+
+
+<header>
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-name">STORM<span>WATCH</span></div>
+  </div>
+  <nav class="links">
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#past-events">Past Events</a>
+  </nav>
+  <div class="live-pill"><span class="live-dot"></span> <span id="livePillText">NOT CONNECTED</span></div>
+</header>
+
+<div class="hero">
+  <div>
+    <div class="eyebrow" id="heroEyebrow">NO EVENT LOADED</div>
+    <h1 class="title">THE CIRCLE<br>IS <span class="accent">CLOSING</span></h1>
+    <p class="sub">Live standings pulled straight from CitoAPI — pick a live tournament below and the board updates with real players, real scores.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-primary" onclick="document.getElementById('connect').scrollIntoView({behavior:'smooth'})">Connect Live Results</button>
+    </div>
+  </div>
+
+  <div class="circle-wrap">
+    <svg viewBox="0 0 300 300">
+      <circle class="circle-ring" cx="150" cy="150" r="140"/>
+      <circle class="circle-ring" cx="150" cy="150" r="100"/>
+      <circle class="circle-storm" cx="150" cy="150" r="120"/>
+      <circle class="circle-storm-2" cx="150" cy="150" r="80"/>
+    </svg>
+    <div class="circle-center">
+      <div class="num mono" id="dataAgeDisplay">—</div>
+      <div class="label">Since last update</div>
+    </div>
+  </div>
+</div>
+
+<div class="note-banner" id="dataSourceNote">
+  <span>⟡</span>
+  <div><b>Not connected yet.</b> Paste your Worker URL below, then pick a live tournament — everything on this page comes from that event's real leaderboard, nothing simulated.</div>
+</div>
+
+<section id="connect" style="padding-top:8px;">
+  <div class="side-card" style="max-width:640px;">
+    <h3>Connect Live Results</h3>
+    <p style="font-size:12.5px; color:var(--text-dim); line-height:1.6; margin-bottom:14px;">
+      This site talks to a small Cloudflare Worker (see <code class="mono">worker.js</code>) that holds your CitoAPI key safely on the server side. Deploy it once (free, no credit card), paste its URL below, then browse live events and pick the exact one you want — multiple regions often run at the same time, so always check the region tag before loading.
+    </p>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <input id="workerUrlInput" type="text" value="https://stormwatch-proxy.r6tpvcmf6c.workers.dev" placeholder="https://stormwatch-proxy.your-subdomain.workers.dev" style="flex:1; min-width:260px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+      <button class="btn btn-primary" id="lookupBtn" onclick="findTournamentIds()">Show Live Events</button>
+    </div>
+
+    <div id="fetchStatus" style="margin-top:10px; font-size:12px; font-family:'IBM Plex Mono',monospace; color:var(--text-faint);"></div>
+    <div id="tourneyLookupResults" style="margin-top:12px;"></div>
+
+    <label style="display:flex; align-items:center; gap:8px; margin-top:14px; font-size:12.5px; color:var(--text-dim); cursor:pointer;">
+      <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" style="accent-color: var(--storm-bright); width:15px; height:15px; cursor:pointer;">
+      Auto-refresh the loaded event every 2 minutes
+    </label>
+    <div id="autoRefreshStatus" style="font-size:11px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace; margin-top:4px; margin-left:23px;"></div>
+
+    <details style="margin-top:16px; padding-top:14px; border-top:1px solid var(--line);">
+      <summary style="cursor:pointer; font-size:12px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace;">Advanced: enter a tournament ID manually</summary>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+        <input id="tourneyIdInput" type="text" placeholder="Tournament ID" style="flex:1; min-width:180px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+        <button class="btn btn-ghost" id="refreshBtn" onclick="fetchLiveStandings()">Load This ID</button>
+      </div>
+    </details>
+
+    <p style="font-size:11.5px; color:var(--text-faint); line-height:1.6; margin-top:12px;">
+      Your Worker URL is safe to leave in this page — it's just an address, not a secret. The real CitoAPI key stays inside the Worker, on Cloudflare's servers.
+    </p>
+  </div>
+</section>
+
+<section id="leaderboard">
+  <div class="section-head">
+    <div class="section-title">Standings</div>
+    <div class="section-meta" id="lastUpdated">NO EVENT LOADED</div>
+  </div>
+
+  <div style="margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <input id="playerSearchInput" type="text" placeholder="Find a player or team…" oninput="renderBoard()" style="flex:1; min-width:220px; max-width:320px; background:var(--bg-panel); border:1px solid var(--line); border-radius:6px; padding:10px 14px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px;">
+    <button class="btn btn-ghost" id="shareLinkBtn" onclick="copyShareLink()" style="padding:10px 16px; font-size:13px;">🔗 Copy Share Link</button>
+  </div>
+
+  <div class="layout-grid" style="margin-top:20px;">
+    <div>
+      <div class="board">
+        <div class="board-header">
+          <div>#</div>
+          <div>Team</div>
+          <div class="col-elims">Elims</div>
+          <div>Points</div>
+          <div class="col-avg">Avg Plc</div>
+          <div class="col-trend">Trend</div>
+          <div>Games</div>
+        </div>
+        <div id="boardBody"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <h3>Lobby Snapshot</h3>
+        <div class="mini-stat"><span>Teams loaded</span><span class="v" id="snapTeams">—</span></div>
+        <div class="mini-stat"><span>Total eliminations</span><span class="v" id="snapElims" style="color:var(--elim);">—</span></div>
+        <div class="mini-stat"><span>Event</span><span class="v" id="snapEvent" style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</span></div>
+        <div class="mini-stat"><span>Highest match #</span><span class="v" id="snapMatchNum">—</span></div>
+        <div class="mini-stat"><span>Last match ended</span><span class="v" id="snapLastMatch">—</span></div>
+        <div class="mini-stat"><span>Time since</span><span class="v" id="snapTimeSince">—</span></div>
+        <div class="mini-stat"><span>Data pulled</span><span class="v" id="snapUpdated">—</span></div>
+
+        <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+          <label style="font-size:11.5px; color:var(--text-faint); display:block; margin-bottom:6px;">
+            Points to qualify (the threshold announced for this tournament — CitoAPI doesn't provide this, type in what you already know)
+          </label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="qualPointsInput" type="number" min="0" placeholder="e.g. 400" oninput="updateQualifyLine()" style="width:90px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px; padding:8px 10px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+            <span style="font-size:12px; color:var(--text-faint);">pts</span>
+          </div>
+          <div class="mini-stat" style="margin-top:8px;"><span>Teams currently qualifying</span><span class="v" id="snapQualCount" style="color:var(--gold);">—</span></div>
+          <div class="mini-stat"><span>Bubble team (closest to cutoff)</span><span class="v" id="snapCutoffTeam" style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</span></div>
+        </div>
+      </div>
+
+      <div class="side-card" id="favoritesCard" style="display:none;">
+        <h3>★ Favorites</h3>
+        <div id="favoritesList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="past-events">
+  <div class="section-head">
+    <div class="section-title">Past Events <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-faint); text-transform:none; font-weight:400; letter-spacing:normal;">(experimental)</span></div>
+  </div>
+  <div class="side-card" style="max-width:640px;">
+    <p style="font-size:12.5px; color:var(--text-dim); line-height:1.6; margin-bottom:14px;">
+      Browse completed tournaments and load their final results. This uses a less-documented part of CitoAPI, so if a result set looks off or won't load, that's a real limitation of the data source, not something to keep clicking through.
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <input id="pastEventSearchInput" type="text" placeholder="Filter by name (optional), e.g. FNCS" style="flex:1; min-width:220px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:12.5px;">
+      <button class="btn btn-primary" id="pastLookupBtn" onclick="findPastEvents()">Search Past Events</button>
+    </div>
+    <div id="pastFetchStatus" style="margin-top:10px; font-size:12px; font-family:'IBM Plex Mono',monospace; color:var(--text-faint);"></div>
+    <div id="pastEventResults" style="margin-top:12px;"></div>
+  </div>
+</section>
+
+<footer>
+  <div>STORMWATCH — built for fans, not affiliated with Epic Games.</div>
+  <div>Live data via CitoAPI</div>
+</footer>
+
+<script>
+const TEAM_COLORS = ['#7c6cff','#2ce6d9','#f5c542','#ff4d6d','#5eead4','#c084fc','#fb923c','#60a5fa'];
+
+let LOADED_TEAMS = []; // empty until a real event is loaded — no fake fallback
+
+function trendArrow(t, delta){
+  const d = Math.abs(delta || 0);
+  if(t==='up') return `<span class="trend up">▲ ${d}</span>`;
+  if(t==='down') return `<span class="trend down">▼ ${d}</span>`;
+  return `<span class="trend flat">—</span>`;
+}
+
+// Real average placement across this team's actual matches, computed from
+// CitoAPI's own per-session placement data — not derived from rank.
+function realAvgPlacement(team){
+  const placements = (team.sessions || [])
+    .map(s => s.placement)
+    .filter(p => typeof p === 'number');
+  if(placements.length === 0) return '—';
+  const avg = placements.reduce((sum, p) => sum + p, 0) / placements.length;
+  return avg.toFixed(1);
+}
+
+// Tiny inline sparkline from this team's point history across recent
+// fetches in THIS session — real data we've observed, not projected or
+// fabricated. Needs at least 2 points to draw a line; otherwise blank.
+function renderSparkline(history){
+  if(!Array.isArray(history) || history.length < 2) return '';
+
+  const w = 60, h = 14, pad = 2;
+  const min = Math.min(...history);
+  const max = Math.max(...history);
+  const range = max - min || 1;
+
+  const points = history.map((v, i) => {
+    const x = pad + (i / (history.length - 1)) * (w - pad*2);
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  const trendingUp = history[history.length-1] >= history[0];
+  const strokeColor = trendingUp ? 'var(--cyan)' : 'var(--elim)';
+
+  return `<svg width="${w}" height="${h}" style="display:block; margin-top:3px;" viewBox="0 0 ${w} ${h}">
+    <polyline points="${points}" fill="none" stroke="${strokeColor}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function renderBoard(){
+  const body = document.getElementById('boardBody');
+
+  if(LOADED_TEAMS.length === 0){
+    body.innerHTML = `
+      <div style="padding:40px 20px; text-align:center; color:var(--text-faint); font-size:13.5px;">
+        No event loaded yet.<br>
+        <span style="font-size:12px;">Scroll down to <b style="color:var(--text-dim);">Connect Live Results</b>, paste your Worker URL, and pick a live tournament.</span>
+      </div>`;
+    updateQualifyStats(0, -1);
+    return;
+  }
+
+  const searchEl = document.getElementById('playerSearchInput');
+  const query = (searchEl ? searchEl.value : '').trim().toLowerCase();
+  let firstMatchRow = null;
+  const favorites = getFavorites();
+  const leaderPoints = Math.max(1, LOADED_TEAMS[0]?.points || 1); // avoid divide-by-zero
+
+  const qualThreshold = parseInt(document.getElementById('qualPointsInput')?.value, 10);
+  const hasQualLine = !isNaN(qualThreshold) && qualThreshold > 0;
+  // Teams are already sorted highest-points-first, so the cutoff is simply
+  // the last index where a team's score still meets the threshold.
+  let qualCutoffIndex = -1;
+  if(hasQualLine){
+    for(let i = 0; i < LOADED_TEAMS.length; i++){
+      if(LOADED_TEAMS[i].points >= qualThreshold) qualCutoffIndex = i;
+      else break;
+    }
+  }
+
+  body.innerHTML = LOADED_TEAMS.map((t, i) => {
+    const rank = i+1;
+    const rankClass = rank<=3 ? `r${rank}` : '';
+    const avg = realAvgPlacement(t);
+    const primaryName = t.tag ? `${t.tag} · ${t.players[0]}` : t.players[0];
+    const rosterLine = t.players.length > 1 ? t.players.join(' & ') : t.players[0];
+
+    const haystack = (t.tag + ' ' + t.players.join(' ')).toLowerCase();
+    const isMatch = query.length > 0 && haystack.includes(query);
+    if(isMatch && firstMatchRow === null) firstMatchRow = i;
+
+    const matchStyle = isMatch ? 'background:rgba(245,197,66,0.1); box-shadow:inset 3px 0 0 var(--gold);' : '';
+    const favKey = favKeyFor(t);
+    const isFav = favorites.includes(favKey);
+
+    const qualDivider = (hasQualLine && i === qualCutoffIndex)
+      ? `<div style="display:flex; align-items:center; gap:10px; padding:6px 18px; background:rgba(245,197,66,0.08);">
+          <div style="flex:1; height:1px; background:var(--gold); opacity:0.5;"></div>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--gold); letter-spacing:0.08em;">${qualThreshold}+ PTS TO QUALIFY</span>
+          <div style="flex:1; height:1px; background:var(--gold); opacity:0.5;"></div>
+        </div>`
+      : '';
+
+    return `
+      <div class="board-row ${rank<=3?'top3':''} ${isFav && !isMatch ? 'favorited' : ''}" style="${matchStyle}" data-row-index="${i}">
+        <div class="rank ${rankClass}">${rank}</div>
+        <div class="team-cell">
+          <button class="fav-star ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavorite('${favKey.replace(/'/g,"\\'")}')" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">${isFav ? '★' : '☆'}</button>
+          <div class="team-swatch" style="background:${t.color}; color:${t.color};"></div>
+          <div class="team-info">
+            <div class="team-name">${primaryName}</div>
+            <div class="team-players">${rosterLine}</div>
+          </div>
+        </div>
+        <div class="stat col-elims">${t.elims}</div>
+        <div class="stat pts">
+          ${t.points}
+          <div class="points-bar-track"><div class="points-bar-fill" style="width:${Math.max(3, (t.points/leaderPoints)*100)}%;"></div></div>
+          ${renderSparkline(t.history)}
+        </div>
+        <div class="stat col-avg">${avg}</div>
+        <div class="col-trend">${trendArrow(t.trend, t.rankDelta)}</div>
+        <div class="stat">${t.games}</div>
+      </div>
+      ${qualDivider}
+    `;
+  }).join('');
+
+  if(firstMatchRow !== null){
+    const row = body.querySelector(`[data-row-index="${firstMatchRow}"]`);
+    if(row) row.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  updateQualifyStats(qualThreshold, qualCutoffIndex);
+
+  renderFavoritesList();
+}
+
+// Favorites are stored in the browser's own localStorage — this works
+// because you're opening the file directly in your real browser. Keyed by
+// sorted player names (not team ID), so a favorite still matches even if
+// CitoAPI assigns a different teamId in a future event.
+function getFavorites(){
+  try{
+    const raw = localStorage.getItem('stormwatch_favorites');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){
+    return [];
+  }
+}
+
+function saveFavorites(arr){
+  try{
+    localStorage.setItem('stormwatch_favorites', JSON.stringify(arr));
+  } catch(e){
+    console.warn('Could not save favorites:', e);
+  }
+}
+
+function favKeyFor(team){
+  return team.players.slice().sort().join('+').toLowerCase();
+}
+
+function toggleFavorite(key){
+  let favs = getFavorites();
+  if(favs.includes(key)){
+    favs = favs.filter(f => f !== key);
+  } else {
+    favs.push(key);
+  }
+  saveFavorites(favs);
+  renderBoard();
+}
+
+function renderFavoritesList(){
+  const card = document.getElementById('favoritesCard');
+  const list = document.getElementById('favoritesList');
+  const favorites = getFavorites();
+
+  if(favorites.length === 0){
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+
+  // Look up each favorite's current rank (index in LOADED_TEAMS), then sort
+  // so teams actually in this event come first in rank order, and teams
+  // not currently in the event drop to the bottom.
+  const withRank = favorites.map(key => ({
+    key,
+    idx: LOADED_TEAMS.findIndex(t => favKeyFor(t) === key)
+  }));
+
+  withRank.sort((a, b) => {
+    if(a.idx === -1 && b.idx === -1) return 0;
+    if(a.idx === -1) return 1;  // a not in event -> goes after b
+    if(b.idx === -1) return -1; // b not in event -> goes after a
+    return a.idx - b.idx;       // both in event -> lower rank number first
+  });
+
+  list.innerHTML = withRank.map(({key, idx}) => {
+    if(idx === -1){
+      return `
+        <div class="fav-item">
+          <span style="color:var(--text-faint);">${key.split('+').join(' & ')}</span>
+          <span style="font-size:11px; color:var(--text-faint);">not in this event</span>
+        </div>`;
+    }
+    const t = LOADED_TEAMS[idx];
+    return `
+      <div class="fav-item">
+        <span class="fav-rank">#${idx+1}</span>
+        <span style="flex:1; padding-left:8px;">${t.players.join(' & ')}</span>
+        <span class="mono" style="color:var(--cyan); font-size:12px;">${t.points} pts</span>
+      </div>`;
+  }).join('');
+}
+
+// Real cutoff math computed from the currently loaded leaderboard — the
+// "qualifying spots" number itself has to come from you (tournament rules
+// aren't something CitoAPI exposes), but once you enter it, the actual
+// points threshold is pulled from the real team sitting at that rank.
+function updateQualifyStats(qualThreshold, qualCutoffIndex){
+  const countEl = document.getElementById('snapQualCount');
+  const teamEl = document.getElementById('snapCutoffTeam');
+  if(!countEl || !teamEl) return;
+
+  if(!qualThreshold || isNaN(qualThreshold) || qualThreshold <= 0){
+    countEl.textContent = '—';
+    teamEl.textContent = LOADED_TEAMS.length === 0 ? '—' : 'enter a points threshold above';
+    return;
+  }
+
+  const qualifyingCount = LOADED_TEAMS.filter(t => t.points >= qualThreshold).length;
+  countEl.textContent = `${qualifyingCount} / ${LOADED_TEAMS.length}`;
+
+  if(qualCutoffIndex === -1){
+    teamEl.textContent = 'no team has reached it yet';
+  } else {
+    const bubbleTeam = LOADED_TEAMS[qualCutoffIndex];
+    teamEl.textContent = `${bubbleTeam.players.join(' & ')} (${bubbleTeam.points} pts)`;
+    teamEl.title = bubbleTeam.players.join(' & ');
+  }
+}
+
+// Called directly by the input's oninput — re-renders the board (for the
+// gold cutoff divider line) without needing a new data fetch.
+function updateQualifyLine(){
+  renderBoard();
+}
+
+let lastMatchEndTime = null; // real Date pulled from CitoAPI session data, not decorative
+
+function updateSnapshot(eventName){
+  if(LOADED_TEAMS.length === 0){
+    document.getElementById('snapTeams').textContent = '—';
+    document.getElementById('snapElims').textContent = '—';
+    document.getElementById('snapEvent').textContent = '—';
+    document.getElementById('snapMatchNum').textContent = '—';
+    document.getElementById('snapLastMatch').textContent = '—';
+    document.getElementById('snapTimeSince').textContent = '—';
+    document.getElementById('snapUpdated').textContent = '—';
+    lastMatchEndTime = null;
+    return;
+  }
+
+  const { latestEnd, highestMatchNumber } = extractMatchInfo(LOADED_TEAMS);
+  lastMatchEndTime = latestEnd;
+
+  document.getElementById('snapTeams').textContent = LOADED_TEAMS.length;
+  document.getElementById('snapElims').textContent = LOADED_TEAMS.reduce((s,t)=>s+t.elims,0);
+  document.getElementById('snapEvent').textContent = eventName || '—';
+  document.getElementById('snapEvent').title = eventName || '';
+  document.getElementById('snapMatchNum').textContent = highestMatchNumber || '—';
+  document.getElementById('snapLastMatch').textContent = latestEnd
+    ? latestEnd.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+    : '—';
+  document.getElementById('snapUpdated').textContent = lastFetchTime ? lastFetchTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—';
+
+  tickTimeSince(); // update immediately, then the 1s interval keeps it live
+}
+
+// Ticks every second using the REAL last-match-end timestamp from CitoAPI —
+// not a fake countdown. If no match data is loaded, it just shows a dash.
+function tickTimeSince(){
+  const el = document.getElementById('snapTimeSince');
+  if(el){
+    if(!lastMatchEndTime){
+      el.textContent = '—';
+    } else {
+      const diffMs = Date.now() - lastMatchEndTime.getTime();
+      const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+      el.textContent = `${Math.floor(totalSec/60)}m ${totalSec%60}s ago`;
+    }
+  }
+
+  // Hero circle: real time since the last successful data pull (not a
+  // fake countdown) — ticks every second the page is open.
+  const heroEl = document.getElementById('dataAgeDisplay');
+  if(heroEl){
+    if(!lastFetchTime){
+      heroEl.textContent = '—';
+    } else {
+      const diffMs = Date.now() - lastFetchTime.getTime();
+      const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+      const m = Math.floor(totalSec/60), s = totalSec%60;
+      heroEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+  }
+}
+setInterval(tickTimeSince, 1000);
+
+// ---------- REAL DATA HOOKUP ----------
+// This section fetches standings from CitoAPI (citoapi.com) after each game
+// finishes, instead of polling constantly. The key is kept in memory only
+// (a JS variable) — never written to storage, never sent anywhere but
+// CitoAPI's own endpoint.
+//
+// CONFIRMED response shape from /tournaments/live (checked against a real
+// response): { success, data: [ { eventId, eventWindowId, name, regions,
+// isLive, leaderboard: [ { rank, displayName, teamMembers, score, kills,
+// matchesPlayed, ... } ] } ] }
+
+let lastFetchTime = null;
+let lastLiveEvents = []; // cached from the last /tournaments/live call
+let loadedEventId = null; // only set on a CONFIRMED successful board update
+
+function setStatus(msg, isError, isSuccess){
+  const el = document.getElementById('fetchStatus');
+  el.textContent = msg;
+  if(isError){
+    el.style.color = 'var(--elim)';
+    el.style.background = 'rgba(255,77,109,0.1)';
+    el.style.fontWeight = '600';
+  } else if(isSuccess){
+    el.style.color = 'var(--cyan)';
+    el.style.background = 'rgba(44,230,217,0.1)';
+    el.style.fontWeight = '600';
+  } else {
+    el.style.color = 'var(--text-faint)';
+    el.style.background = 'transparent';
+    el.style.fontWeight = '500';
+  }
+  el.style.padding = (isError || isSuccess) ? '8px 10px' : '0';
+  el.style.borderRadius = '6px';
+}
+
+let previousRanks = {}; // teamId -> rank index, from the last successful fetch
+let pointHistory = {}; // teamId -> array of recent point totals, for the sparkline
+const POINT_HISTORY_MAX = 10;
+
+function mapLeaderboardToTeams(rows){
+  if(!Array.isArray(rows) || rows.length === 0) return null;
+
+  const teams = rows.map((row, i) => {
+    const members = row.teamMembers || [];
+    const names = members.length
+      ? members.map(m => m.displayName || 'Player')
+      : [row.displayName || 'Player'];
+    return {
+      id: i,
+      key: row.teamId || names.join('+'), // stable identity across fetches for rank tracking
+      tag: '', // CitoAPI's live leaderboard rows don't include an org/team tag
+      players: names,
+      points: row.score ?? 0,
+      elims: row.kills ?? 0,
+      games: row.matchesPlayed ?? 1,
+      sessions: row.sessions || [],
+      color: TEAM_COLORS[i % TEAM_COLORS.length],
+      trend: 'flat',
+      rankDelta: 0
+    };
+  });
+
+  // Compare current rank (index) against the last fetch's ranks for the
+  // same team key, so the trend arrows reflect real movement instead of
+  // being decorative.
+  teams.forEach((team, i) => {
+    const prevRank = previousRanks[team.key];
+    if(prevRank === undefined){
+      team.trend = 'flat';
+      team.rankDelta = 0;
+    } else if(i < prevRank){
+      team.trend = 'up';
+      team.rankDelta = prevRank - i;
+    } else if(i > prevRank){
+      team.trend = 'down';
+      team.rankDelta = i - prevRank;
+    } else {
+      team.trend = 'flat';
+      team.rankDelta = 0;
+    }
+  });
+
+  previousRanks = {};
+  teams.forEach((team, i) => { previousRanks[team.key] = i; });
+
+  // Record this fetch's point total into each team's rolling history for
+  // the sparkline — capped so the array doesn't grow unbounded over a
+  // long session.
+  teams.forEach(team => {
+    if(!pointHistory[team.key]) pointHistory[team.key] = [];
+    pointHistory[team.key].push(team.points);
+    if(pointHistory[team.key].length > POINT_HISTORY_MAX){
+      pointHistory[team.key] = pointHistory[team.key].slice(-POINT_HISTORY_MAX);
+    }
+    team.history = pointHistory[team.key];
+  });
+
+  return teams;
+}
+
+// Every team's leaderboard row carries its own match session history
+// (matchNumber, startTime, endTime). We scan across all teams to find the
+// most recent match and the highest match number seen — this gives us a
+// real "last match ended at HH:MM" instead of a decorative countdown.
+function extractMatchInfo(teams){
+  let latestEnd = null;
+  let highestMatchNumber = 0;
+
+  teams.forEach(team => {
+    (team.sessions || []).forEach(s => {
+      if(s.matchNumber && s.matchNumber > highestMatchNumber) highestMatchNumber = s.matchNumber;
+      if(s.endTime){
+        const t = new Date(s.endTime);
+        if(!latestEnd || t > latestEnd) latestEnd = t;
+      }
+    });
+  });
+
+  return { latestEnd, highestMatchNumber };
+}
+
+// Only NA and EU region codes make it into the picker — trims a long
+// list (BR, OCE, ASIA, ME, etc.) down to what most people actually want.
+// Epic's region codes: NAC/NAE/NAW = North America Central/East/West.
+const REGION_FILTER = ['NAC','NAE','NAW','NA','EU'];
+
+function isNaOrEu(event){
+  const regions = Array.isArray(event.regions) ? event.regions : [];
+  return regions.some(r => REGION_FILTER.includes(r));
+}
+
+// CitoAPI's "live" list mixes real competitive tournaments (FNCS, Cash
+// Cups, Championship Series) together with open public events anyone can
+// queue into (Ranked Cups, Reload/Test Cups) — those are full of random
+// players, not pros. There's no explicit "is this pro" flag in the data,
+// so this filters by name as a best-effort heuristic. If a real pro event
+// ever gets excluded because its name doesn't match, add a keyword below.
+const PRO_KEYWORDS = ['fncs', 'championship', 'champion series', 'cash cup', 'major', 'series finals', 'world cup', 'invitational'];
+const OPEN_EVENT_KEYWORDS = ['ranked cup', 'reload', 'test cup', 'arena', 'battle lab'];
+
+function isProEvent(event){
+  const name = (event.name || '').toLowerCase();
+  if(OPEN_EVENT_KEYWORDS.some(kw => name.includes(kw))) return false;
+  return PRO_KEYWORDS.some(kw => name.includes(kw));
+}
+
+async function fetchLiveEvents(workerUrl){
+  const res = await fetch(`${workerUrl}/tournaments/live`);
+  if(!res.ok) throw new Error(`Worker responded ${res.status}`);
+  const json = await res.json();
+  if(json?.error) throw new Error(json.error);
+  const allEvents = Array.isArray(json?.data) ? json.data : [];
+  const events = allEvents.filter(isNaOrEu).filter(isProEvent);
+  lastLiveEvents = events;
+  return events;
+}
+
+async function findTournamentIds(){
+  const workerUrl = document.getElementById('workerUrlInput').value.trim().replace(/\/+$/, '');
+  const resultsBox = document.getElementById('tourneyLookupResults');
+  const btn = document.getElementById('lookupBtn');
+
+  if(!workerUrl){
+    setStatus('Paste your Worker URL first, then look up tournaments.', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Looking up…';
+  resultsBox.innerHTML = '';
+
+  try{
+    const events = await fetchLiveEvents(workerUrl);
+    renderEventList(events);
+
+  } catch(err){
+    setStatus('Lookup failed — check the Worker URL and that it\'s deployed correctly.', true);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Show Live Events';
+  }
+}
+
+function renderEventList(events){
+  const resultsBox = document.getElementById('tourneyLookupResults');
+  const currentId = loadedEventId;
+
+  if(events.length === 0){
+    resultsBox.innerHTML = `<div style="font-size:12.5px; color:var(--text-faint);">No NA or EU professional tournaments live right now — open ranked cups may be running, but those are filtered out. Check back when an official event is live.</div>`;
+    return;
+  }
+
+  resultsBox.innerHTML = `
+    <div style="font-size:11px; color:var(--text-faint); margin-bottom:8px; font-family:'IBM Plex Mono',monospace;">
+      ${events.length} PRO EVENTS LIVE (NA / EU) — CHECK THE REGION BEFORE PICKING
+    </div>
+  ` + events.map(ev => {
+    const id = ev.eventId || ev.eventWindowId || '';
+    const name = ev.name || 'Unnamed event';
+    const region = Array.isArray(ev.regions) ? ev.regions.join(' / ') : '';
+    const teamCount = ev.leaderboardCount ?? (ev.leaderboard?.length ?? 0);
+    const isActive = id === currentId;
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px; ${isActive ? 'background:rgba(124,108,255,0.06);' : ''}">
+        <div style="min-width:0;">
+          <div style="font-weight:600; display:flex; align-items:center; gap:8px;">
+            ${name}
+            ${region ? `<span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--cyan); border:1px solid rgba(44,230,217,0.35); padding:2px 6px; border-radius:4px;">${region}</span>` : ''}
+            ${isActive ? `<span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--gold);">● LOADED</span>` : ''}
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:2px;">${teamCount} teams</div>
+        </div>
+        <button class="btn btn-primary" style="padding:8px 14px; font-size:12px; flex-shrink:0;" onclick="loadEventById('${id}')">Load Standings</button>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadEventById(eventId){
+  document.getElementById('tourneyIdInput').value = eventId;
+  await fetchLiveStandings();
+  // re-render the list so the "LOADED" tag moves to the right event
+  renderEventList(lastLiveEvents);
+  updateShareableUrl(eventId);
+}
+
+// Reflects the loaded event in the address bar as ?event=<id> — doesn't
+// reload the page, just makes the current URL copy/paste/text-able so
+// someone else opening it lands on the same tournament automatically.
+function updateShareableUrl(eventId){
+  try{
+    const url = new URL(window.location.href);
+    url.searchParams.set('event', eventId);
+    window.history.replaceState({}, '', url);
+  } catch(e){
+    console.warn('Could not update URL:', e);
+  }
+}
+
+async function copyShareLink(){
+  const btn = document.getElementById('shareLinkBtn');
+  if(!loadedEventId){
+    setStatus('Load an event first, then the share link will include it.', true);
+    btn.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  updateShareableUrl(loadedEventId); // make sure the URL bar is current
+  const link = window.location.href;
+
+  try{
+    await navigator.clipboard.writeText(link);
+    const original = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  } catch(e){
+    // Clipboard API can be blocked in some contexts — fall back to a
+    // visible, selectable text prompt instead of silently failing.
+    window.prompt('Copy this link:', link);
+  }
+}
+
+// ---------- PAST EVENTS (completed tournaments) ----------
+// CitoAPI's docs describe a base /tournaments list covering "historical,
+// upcoming, and completed" events (as opposed to /tournaments/live, which
+// only shows what's active right now), plus a per-tournament results
+// endpoint. Field names here are a best-effort guess based on the pattern
+// CitoAPI uses elsewhere — if a completed event's results don't map
+// correctly, that's this guess needing adjustment, not your setup.
+let lastPastEvents = [];
+
+function setPastStatus(msg, isError, isSuccess){
+  const el = document.getElementById('pastFetchStatus');
+  if(!el) return;
+  el.textContent = msg;
+  if(isError){ el.style.color = 'var(--elim)'; el.style.background = 'rgba(255,77,109,0.1)'; el.style.fontWeight='600'; }
+  else if(isSuccess){ el.style.color = 'var(--cyan)'; el.style.background = 'rgba(44,230,217,0.1)'; el.style.fontWeight='600'; }
+  else { el.style.color = 'var(--text-faint)'; el.style.background = 'transparent'; el.style.fontWeight='500'; }
+  el.style.padding = (isError || isSuccess) ? '8px 10px' : '0';
+  el.style.borderRadius = '6px';
+}
+
+// Past-event region comes back as a single descriptive string like "Asia"
+// or "North America" — different shape from the live endpoint's "regions"
+// array, so it needs its own matcher rather than reusing isNaOrEu().
+function isPastEventNaOrEu(event){
+  const region = (event.region || '').toLowerCase();
+  return /north america|^na$|\bnac\b|\bnae\b|\bnaw\b/.test(region)
+      || /europe|^eu$/.test(region);
+}
+
+async function findPastEvents(){
+  const workerUrl = document.getElementById('workerUrlInput').value.trim().replace(/\/+$/, '');
+  const query = document.getElementById('pastEventSearchInput').value.trim();
+  const resultsBox = document.getElementById('pastEventResults');
+  const btn = document.getElementById('pastLookupBtn');
+
+  if(!workerUrl){
+    setPastStatus('Paste your Worker URL in the panel above first.', true);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  resultsBox.innerHTML = '';
+  setPastStatus('Searching past events…', false);
+
+  try{
+    // The ?search= param doesn't appear to actually filter server-side
+    // (confirmed by comparing identical responses with/without it), so we
+    // fetch a page and filter for the name match ourselves below.
+    const path = query ? `tournaments?search=${encodeURIComponent(query)}` : `tournaments`;
+    const res = await fetch(`${workerUrl}/${path}`);
+    if(!res.ok) throw new Error(`Worker responded ${res.status}`);
+    const json = await res.json();
+    if(json?.error) throw new Error(json.error);
+
+    const allEvents = Array.isArray(json?.data) ? json.data : [];
+    const totalAvailable = json?.total ?? allEvents.length;
+
+    let events = allEvents.filter(ev => ev.status !== 'live' && ev.isLive !== true);
+
+    // Real client-side name filter, since the server doesn't seem to apply
+    // the search param itself.
+    if(query){
+      const q = query.toLowerCase();
+      events = events.filter(ev => (ev.name || '').toLowerCase().includes(q));
+    }
+
+    events = events.filter(isPastEventNaOrEu);
+
+    // Prefer the tier field when CitoAPI provides one (S/A tier = official
+    // top-level competitive events) — more reliable than name-keyword
+    // guessing. Falls back to the name-keyword filter if tier is missing.
+    const hasTierData = events.some(ev => ev.tier);
+    events = hasTierData
+      ? events.filter(ev => ev.tier === 'S' || ev.tier === 'A')
+      : events.filter(isProEvent);
+
+    events = events.slice(0, 25);
+    lastPastEvents = events;
+
+    if(events.length === 0){
+      resultsBox.innerHTML = `<div style="font-size:12.5px; color:var(--text-faint);">
+        No matching NA/EU professional events found on this page of results.
+        ${totalAvailable > allEvents.length ? `CitoAPI has ${totalAvailable.toLocaleString()} historical tournaments total, and this only searches the first ${allEvents.length} returned — a more specific or different search term may land on a page that includes what you're after.` : 'Try a different search term.'}
+      </div>`;
+      setPastStatus('', false);
+      return;
+    }
+
+    resultsBox.innerHTML = events.map(ev => {
+      const id = ev.id || ev.tournamentId || '';
+      const name = ev.name || 'Unnamed event';
+      const region = ev.region || '';
+      const when = ev.endDate ? new Date(ev.endDate).toLocaleDateString() : (ev.startDate ? new Date(ev.startDate).toLocaleDateString() : '');
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;">
+          <div style="min-width:0;">
+            <div style="font-weight:600; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              ${name}
+              ${region ? `<span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--cyan); border:1px solid rgba(44,230,217,0.35); padding:2px 6px; border-radius:4px;">${region}</span>` : ''}
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:2px;">${when}</div>
+          </div>
+          <button class="btn btn-primary" style="padding:8px 14px; font-size:12px; flex-shrink:0;" onclick="loadPastEventResults('${id}')">Load Results</button>
+        </div>
+      `;
+    }).join('');
+
+    setPastStatus(`Found ${events.length} completed event(s).`, false, true);
+
+  } catch(err){
+    setPastStatus('Search failed — this endpoint may need adjustment, or check your Worker URL.', true);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search Past Events';
+  }
+}
+
+// Flexible mapping since a completed event's results shape isn't confirmed
+// the way the live leaderboard shape was — tries several likely field
+// names rather than assuming one exact structure.
+function mapPastResultsToTeams(rows){
+  if(!Array.isArray(rows) || rows.length === 0) return null;
+
+  const sorted = rows.slice().sort((a, b) => {
+    const ra = a.rank ?? a.placement ?? 9999;
+    const rb = b.rank ?? b.placement ?? 9999;
+    return ra - rb;
+  });
+
+  return sorted.map((row, i) => {
+    const members = row.teamMembers || row.participants || row.players || [];
+    const names = members.length
+      ? members.map(m => m.displayName || m.name || 'Player')
+      : [row.displayName || row.name || 'Player'];
+    return {
+      id: i,
+      key: row.teamId || names.join('+'),
+      tag: '',
+      players: names,
+      points: row.score ?? row.points ?? 0,
+      elims: row.kills ?? row.eliminations ?? 0,
+      games: row.matchesPlayed ?? row.gamesPlayed ?? '—',
+      sessions: row.sessions || [],
+      color: TEAM_COLORS[i % TEAM_COLORS.length],
+      trend: 'flat',
+      rankDelta: 0
+    };
+  });
+}
+
+async function loadPastEventResults(eventId){
+  const workerUrl = document.getElementById('workerUrlInput').value.trim().replace(/\/+$/, '');
+  const event = lastPastEvents.find(e => (e.id || e.tournamentId) === eventId);
+  const eventName = event?.name || 'Past event';
+
+  // A finished event's results won't change — auto-refreshing it would
+  // just fail every 2 minutes (past events aren't in the live list) and
+  // throw a confusing error, so turn it off if it was running.
+  if(autoRefreshTimer){
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+  const autoBox = document.getElementById('autoRefreshToggle');
+  if(autoBox){
+    autoBox.checked = false;
+    document.getElementById('autoRefreshStatus').textContent = 'Off — this is a finished event, nothing to refresh.';
+  }
+
+  setPastStatus(`Loading results for "${eventName}"…`, false);
+
+  // CitoAPI marks per-event whether results/placements data actually
+  // exists — checking this first avoids a wasted request and gives an
+  // accurate reason instead of a generic failure.
+  const avail = event?.availableSubresources || event?.available_subresources;
+  const resultsKnownUnavailable = avail && (avail.results === false && avail.placements === false);
+  if(resultsKnownUnavailable){
+    setPastStatus(`"${eventName}" has no results data indexed by CitoAPI for this event — that's a real gap in their coverage, not a bug here.`, true);
+    return;
+  }
+
+  try{
+    // First check: some list responses (like the live one) already embed
+    // the full leaderboard right on the event object.
+    let rows = event?.leaderboard;
+
+    // If not embedded, try a dedicated results endpoint for this event.
+    if(!rows || rows.length === 0){
+      const res = await fetch(`${workerUrl}/tournaments/${encodeURIComponent(eventId)}/results`);
+      if(res.ok){
+        const json = await res.json();
+        rows = json?.data?.results || json?.data?.leaderboard || json?.data || [];
+      }
+    }
+
+    const teams = mapPastResultsToTeams(rows);
+    if(!teams){
+      setPastStatus(`No results data available for "${eventName}" — this event may not be indexed by CitoAPI.`, true);
+      return;
+    }
+
+    LOADED_TEAMS = teams;
+    loadedEventId = eventId;
+    lastFetchTime = new Date();
+    previousRanks = {}; // past event — no live rank history to compare against
+    pointHistory = {}; // past event — a sparkline from a different event's fetches wouldn't make sense
+
+    renderBoard();
+    updateSnapshot(`${eventName} (final)`);
+
+    document.getElementById('lastUpdated').textContent = 'FINAL RESULTS — NOT LIVE';
+    document.getElementById('livePillText').textContent = 'PAST EVENT';
+    document.getElementById('heroEyebrow').textContent = `${eventName.toUpperCase()} · FINAL`;
+    document.getElementById('dataSourceNote').innerHTML =
+      `<span>⟡</span><div><b>Final results.</b> Showing "${eventName}" (${teams.length} teams). This event has ended — refresh/auto-refresh won't change these numbers.</div>`;
+    setPastStatus(`✓ Loaded final results for "${eventName}" — ${teams.length} teams.`, false, true);
+
+    document.getElementById('leaderboard').scrollIntoView({behavior:'smooth'});
+
+  } catch(err){
+    setPastStatus('Failed to load results — this endpoint may not be available on your plan.', true);
+    console.error(err);
+  }
+}
+
+async function fetchLiveStandings(){
+  const workerUrl = document.getElementById('workerUrlInput').value.trim().replace(/\/+$/, '');
+  const tourneyId = document.getElementById('tourneyIdInput').value.trim();
+  const btn = document.getElementById('refreshBtn');
+
+  if(!workerUrl){
+    setStatus('Paste your Worker URL first — see worker.js for setup steps.', true);
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching…';
+  setStatus('Contacting your Worker…', false);
+
+  try{
+    // The live-events list already includes each event's leaderboard, so
+    // we fetch that list and pick the matching event locally rather than
+    // guessing at a separate per-tournament endpoint.
+    const events = await fetchLiveEvents(workerUrl);
+
+    if(events.length === 0){
+      setStatus('No NA/EU tournaments live right now — check back once one starts.', true);
+      return false;
+    }
+
+    const event = tourneyId
+      ? events.find(e => e.eventId === tourneyId || e.eventWindowId === tourneyId)
+      : events[0];
+
+    if(!event){
+      setStatus('That tournament ID isn\'t in the current live list — click "Show Live Events" to see what\'s live now.', true);
+      return false;
+    }
+
+    const eventKey = event.eventId || event.eventWindowId || tourneyId;
+    if(eventKey !== loadedEventId){
+      previousRanks = {}; // switching events — don't compare ranks across different tournaments
+      pointHistory = {}; // switching events — don't graph point history across different tournaments
+    }
+
+    const teams = mapLeaderboardToTeams(event.leaderboard);
+
+    if(!teams){
+      setStatus(`"${event.name}" has no leaderboard rows yet — it may not have started.`, true);
+      return false;
+    }
+
+    LOADED_TEAMS = teams;
+    loadedEventId = event.eventId || event.eventWindowId || tourneyId;
+    saveLastEvent(loadedEventId, event.name);
+    lastFetchTime = new Date();
+
+    renderBoard();
+    updateSnapshot(event.name);
+
+    document.getElementById('lastUpdated').textContent =
+      'UPDATED ' + lastFetchTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('livePillText').textContent = 'LIVE DATA';
+    document.getElementById('heroEyebrow').textContent = event.name.toUpperCase();
+    document.getElementById('dataSourceNote').innerHTML =
+      `<span>⟡</span><div><b>Connected.</b> Showing "${event.name}" (${teams.length} teams). Hit refresh again after the next game.</div>`;
+    setStatus(`✓ Loaded "${event.name}" — ${teams.length} teams.`, false, true);
+
+    // If auto-refresh is checked but the timer never actually started
+    // (e.g. it was checked before any event was loaded), start it now.
+    const autoBox = document.getElementById('autoRefreshToggle');
+    if(autoBox && autoBox.checked && !autoRefreshTimer){
+      toggleAutoRefresh();
+    }
+
+    return true;
+
+  } catch(err){
+    setStatus('Fetch failed — double check the Worker URL is correct and deployed. See browser console for details.', true);
+    console.error(err);
+    return false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh After Game';
+  }
+}
+
+// Remembers the last event you loaded so a page refresh can jump straight
+// back to it. This uses the browser's own localStorage, which only works
+// because you're opening this file directly in your real browser — it
+// won't persist inside a sandboxed preview.
+function saveLastEvent(id, name){
+  try{
+    localStorage.setItem('stormwatch_last_event', JSON.stringify({id, name}));
+  } catch(e){
+    console.warn('Could not save last event (localStorage unavailable):', e);
+  }
+}
+
+function getLastEvent(){
+  try{
+    const raw = localStorage.getItem('stormwatch_last_event');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){
+    return null;
+  }
+}
+
+renderBoard();
+updateSnapshot();
+
+// Worker URL is pre-filled above, so on open we: fetch the live list, then
+// automatically reload whichever event you had loaded last time, if it's
+// still live. Falls back to just showing the list if it isn't.
+let autoRefreshTimer = null;
+
+function toggleAutoRefresh(){
+  const on = document.getElementById('autoRefreshToggle').checked;
+  const statusEl = document.getElementById('autoRefreshStatus');
+
+  if(autoRefreshTimer){
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+
+  if(on){
+    if(!loadedEventId){
+      statusEl.textContent = 'Load an event first — auto-refresh will start once one is loaded.';
+      return;
+    }
+
+    const runCheck = () => {
+      document.getElementById('tourneyIdInput').value = loadedEventId;
+      fetchLiveStandings().then(success => {
+        // fetchLiveStandings already writes the detailed reason to
+        // #fetchStatus on failure — this line just reflects pass/fail
+        // here too, since that's a separate box further up the page.
+        const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        statusEl.textContent = success
+          ? `On — last auto-check succeeded at ${now}.`
+          : `On — last auto-check FAILED at ${now} (see status above for why). Will try again in 2 min.`;
+        statusEl.style.color = success ? 'var(--text-faint)' : 'var(--elim)';
+      });
+    };
+
+    statusEl.textContent = 'On — checking now…';
+    statusEl.style.color = 'var(--text-faint)';
+    runCheck(); // real immediate check, not just a claim
+    autoRefreshTimer = setInterval(runCheck, 2 * 60 * 1000);
+  } else {
+    statusEl.textContent = '';
+  }
+}
+
+(async function initLiveData(){
+  if(!document.getElementById('workerUrlInput').value.trim()) return;
+
+  await findTournamentIds();
+
+  // A shared link (?event=eventId) takes priority over the remembered
+  // last-loaded event, so opening someone else's link shows their event.
+  const urlEventId = new URLSearchParams(window.location.search).get('event');
+  if(urlEventId){
+    const inLiveList = lastLiveEvents.some(e => (e.eventId || e.eventWindowId) === urlEventId);
+    if(inLiveList){
+      await loadEventById(urlEventId);
+      return;
+    } else {
+      setStatus('The event in this link isn\'t currently live — pick a current one from the list above.', true);
+      return;
+    }
+  }
+
+  const last = getLastEvent();
+  if(!last) return;
+
+  const stillLive = lastLiveEvents.some(e => (e.eventId || e.eventWindowId) === last.id);
+  if(stillLive){
+    await loadEventById(last.id);
+  } else {
+    setStatus(`Your last event ("${last.name}") isn't live anymore — pick a current one from the list above.`, true);
+  }
+})();
+</script>
+
+</body>
+</html>
